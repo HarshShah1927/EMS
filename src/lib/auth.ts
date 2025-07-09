@@ -1,20 +1,6 @@
 import bcrypt from 'bcryptjs';
 import { connectDB } from './mongodb';
-import { User } from '../types';
-
-export interface LoginCredentials {
-  email: string;
-  password: string;
-}
-
-export interface AuthUser {
-  id: string;
-  email: string;
-  name: string;
-  role: string;
-  department?: string;
-  isActive: boolean;
-}
+import { AuthUser, LoginCredentials } from '../types';
 
 // Hash password utility
 export const hashPassword = async (password: string): Promise<string> => {
@@ -35,7 +21,7 @@ export const loginUser = async (credentials: LoginCredentials): Promise<AuthUser
 
     // Find user by email (case-insensitive)
     const user = await usersCollection.findOne({ 
-      email: { $regex: new RegExp(`^${credentials.email}$`, 'i') }
+      email: { $regex: new RegExp(`^${credentials.email.trim()}$`, 'i') }
     });
 
     if (!user) {
@@ -100,7 +86,7 @@ export const createUser = async (userData: {
 
     // Check if user already exists
     const existingUser = await usersCollection.findOne({ 
-      email: { $regex: new RegExp(`^${userData.email}$`, 'i') }
+      email: { $regex: new RegExp(`^${userData.email.trim()}$`, 'i') }
     });
 
     if (existingUser) {
@@ -112,8 +98,8 @@ export const createUser = async (userData: {
 
     // Create user object
     const newUser = {
-      name: userData.name,
-      email: userData.email.toLowerCase(),
+      name: userData.name.trim(),
+      email: userData.email.toLowerCase().trim(),
       password: hashedPassword,
       role: userData.role,
       department: userData.department || '',
@@ -142,6 +128,76 @@ export const createUser = async (userData: {
     return null;
   } catch (error) {
     console.error('Create user error:', error);
+    throw error;
+  }
+};
+
+// Update user password
+export const updateUserPassword = async (userId: string, newPassword: string): Promise<boolean> => {
+  try {
+    const { db } = await connectDB();
+    const usersCollection = db.collection('users');
+    const { ObjectId } = await import('mongodb');
+
+    const hashedPassword = await hashPassword(newPassword);
+
+    const result = await usersCollection.updateOne(
+      { _id: new ObjectId(userId) },
+      { 
+        $set: { 
+          password: hashedPassword,
+          updatedAt: new Date()
+        }
+      }
+    );
+
+    return result.modifiedCount > 0;
+
+  } catch (error) {
+    console.error('Update password error:', error);
+    return false;
+  }
+};
+
+// Change password (requires current password verification)
+export const changePassword = async (userId: string, currentPassword: string, newPassword: string): Promise<boolean> => {
+  try {
+    const { db } = await connectDB();
+    const usersCollection = db.collection('users');
+    const { ObjectId } = await import('mongodb');
+
+    // Get current user
+    const user = await usersCollection.findOne({ _id: new ObjectId(userId) });
+    
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    // Verify current password
+    const isCurrentPasswordValid = await verifyPassword(currentPassword, user.password);
+    
+    if (!isCurrentPasswordValid) {
+      throw new Error('Current password is incorrect');
+    }
+
+    // Hash new password
+    const hashedPassword = await hashPassword(newPassword);
+
+    // Update password
+    const result = await usersCollection.updateOne(
+      { _id: new ObjectId(userId) },
+      { 
+        $set: { 
+          password: hashedPassword,
+          updatedAt: new Date()
+        }
+      }
+    );
+
+    return result.modifiedCount > 0;
+
+  } catch (error) {
+    console.error('Change password error:', error);
     throw error;
   }
 };
@@ -206,7 +262,7 @@ export const getUserById = async (userId: string): Promise<AuthUser | null> => {
   try {
     const { db } = await connectDB();
     const usersCollection = db.collection('users');
-    const { ObjectId } = require('mongodb');
+    const { ObjectId } = await import('mongodb');
 
     const user = await usersCollection.findOne({ _id: new ObjectId(userId) });
 
@@ -229,39 +285,12 @@ export const getUserById = async (userId: string): Promise<AuthUser | null> => {
   }
 };
 
-// Update user password
-export const updateUserPassword = async (userId: string, newPassword: string): Promise<boolean> => {
-  try {
-    const { db } = await connectDB();
-    const usersCollection = db.collection('users');
-    const { ObjectId } = require('mongodb');
-
-    const hashedPassword = await hashPassword(newPassword);
-
-    const result = await usersCollection.updateOne(
-      { _id: new ObjectId(userId) },
-      { 
-        $set: { 
-          password: hashedPassword,
-          updatedAt: new Date()
-        }
-      }
-    );
-
-    return result.modifiedCount > 0;
-
-  } catch (error) {
-    console.error('Update password error:', error);
-    return false;
-  }
-};
-
 // Deactivate user
 export const deactivateUser = async (userId: string): Promise<boolean> => {
   try {
     const { db } = await connectDB();
     const usersCollection = db.collection('users');
-    const { ObjectId } = require('mongodb');
+    const { ObjectId } = await import('mongodb');
 
     const result = await usersCollection.updateOne(
       { _id: new ObjectId(userId) },
@@ -286,7 +315,7 @@ export const activateUser = async (userId: string): Promise<boolean> => {
   try {
     const { db } = await connectDB();
     const usersCollection = db.collection('users');
-    const { ObjectId } = require('mongodb');
+    const { ObjectId } = await import('mongodb');
 
     const result = await usersCollection.updateOne(
       { _id: new ObjectId(userId) },

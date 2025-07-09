@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { LogIn, Eye, EyeOff, AlertCircle, CheckCircle } from 'lucide-react';
 import { loginUser, initializeDefaultUsers } from '../lib/auth';
+import { AuthUser } from '../types';
 
 interface LoginProps {
-  onLogin: (user: any) => void;
+  onLogin: (user: AuthUser) => void;
 }
 
 export default function Login({ onLogin }: LoginProps) {
@@ -41,7 +42,7 @@ export default function Login({ onLogin }: LoginProps) {
 
       // Validate email format
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
+      if (!emailRegex.test(email.trim())) {
         setError('Please enter a valid email address');
         setIsLoading(false);
         return;
@@ -125,7 +126,7 @@ export default function Login({ onLogin }: LoginProps) {
           {/* Login Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="email" className="form-label">
                 Email Address
               </label>
               <input
@@ -133,7 +134,7 @@ export default function Login({ onLogin }: LoginProps) {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+                className="form-input"
                 placeholder="Enter your email"
                 disabled={isLoading}
                 autoComplete="email"
@@ -141,7 +142,7 @@ export default function Login({ onLogin }: LoginProps) {
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="password" className="form-label">
                 Password
               </label>
               <div className="relative">
@@ -150,7 +151,7 @@ export default function Login({ onLogin }: LoginProps) {
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors pr-12"
+                  className="form-input pr-12"
                   placeholder="Enter your password"
                   disabled={isLoading}
                   autoComplete="current-password"
@@ -169,7 +170,7 @@ export default function Login({ onLogin }: LoginProps) {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-indigo-600 text-white py-3 px-4 rounded-lg hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+              className="btn-primary w-full"
             >
               {isLoading ? (
                 <div className="flex items-center justify-center">
