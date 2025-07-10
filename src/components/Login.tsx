@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { LogIn, Eye, EyeOff, AlertCircle, CheckCircle } from 'lucide-react';
-import { loginUser, initializeDefaultUsers } from '../lib/auth';
+import { loginUser } from '../lib/auth';
 import { AuthUser } from '../types';
 
 interface LoginProps {
@@ -14,11 +14,6 @@ export default function Login({ onLogin }: LoginProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-
-  // Initialize default users on component mount
-  React.useEffect(() => {
-    initializeDefaultUsers().catch(console.error);
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
