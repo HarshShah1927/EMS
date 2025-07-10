@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AuthUser } from './types';
-import { getUserById } from './lib/auth';
+import { getUserById, loginUser } from './lib/auth';
+import { connectDB } from './lib/database';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 import Sidebar from './components/Sidebar';
@@ -15,30 +16,41 @@ function App() {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isLoading, setIsLoading] = useState(true);
+  const [dbConnected, setDbConnected] = useState(false);
 
   useEffect(() => {
-    // Check for existing session
-    const savedUser = localStorage.getItem('ems_user');
-    if (savedUser) {
-      try {
-        const userData = JSON.parse(savedUser);
-        // Verify user still exists and is active
-        getUserById(userData.id).then(currentUser => {
+    initializeApp();
+  }, []);
+
+  const initializeApp = async () => {
+    try {
+      // Connect to database first
+      await connectDB();
+      setDbConnected(true);
+      console.log('✅ Database connected successfully');
+
+      // Check for existing session
+      const savedUser = localStorage.getItem('ems_user');
+      if (savedUser) {
+        try {
+          const userData = JSON.parse(savedUser);
+          // Verify user still exists and is active
+          const currentUser = await getUserById(userData.id);
           if (currentUser && currentUser.isActive) {
             setUser(currentUser);
           } else {
             localStorage.removeItem('ems_user');
           }
-          setIsLoading(false);
-        });
-      } catch (error) {
-        localStorage.removeItem('ems_user');
-        setIsLoading(false);
+        } catch (error) {
+          localStorage.removeItem('ems_user');
+        }
       }
-    } else {
+    } catch (error) {
+      console.error('❌ Failed to initialize app:', error);
+    } finally {
       setIsLoading(false);
     }
-  }, []);
+  };
 
   const handleLogin = (userData: AuthUser) => {
     setUser(userData);
@@ -54,7 +66,25 @@ function App() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">
+            {!dbConnected ? 'Connecting to database...' : 'Loading application...'}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!dbConnected) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+            <h2 className="font-bold">Database Connection Failed</h2>
+            <p>Please check your MongoDB Atlas configuration in the .env file</p>
+          </div>
+        </div>
       </div>
     );
   }
