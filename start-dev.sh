@@ -9,15 +9,6 @@ NC='\033[0m' # No Color
 
 echo -e "${BLUE}🚀 Starting Employee Management System${NC}"
 
-# Check if MongoDB is running
-if ! pgrep -x "mongod" > /dev/null; then
-    echo -e "${YELLOW}⚠️  MongoDB is not running. Please start MongoDB first.${NC}"
-    echo -e "${YELLOW}   You can start it with: brew services start mongodb/brew/mongodb-community${NC}"
-    echo -e "${YELLOW}   Or: sudo systemctl start mongod${NC}"
-    echo -e "${YELLOW}   Or: mongod --dbpath /path/to/your/db${NC}"
-    exit 1
-fi
-
 # Function to cleanup background processes
 cleanup() {
     echo -e "\n${YELLOW}🛑 Shutting down servers...${NC}"
@@ -28,9 +19,18 @@ cleanup() {
 # Trap Ctrl+C to cleanup
 trap cleanup SIGINT
 
+# Start development database
+echo -e "${GREEN}🗄️  Starting development database...${NC}"
+cd backend
+npm run setup-dev-db &
+DB_PID=$!
+
+# Wait for database to start
+echo -e "${YELLOW}⏳ Waiting for database to initialize...${NC}"
+sleep 8
+
 # Start backend server
 echo -e "${GREEN}🔧 Starting backend server...${NC}"
-cd backend
 npm run dev &
 BACKEND_PID=$!
 
@@ -43,11 +43,13 @@ cd ..
 npm run dev &
 FRONTEND_PID=$!
 
-echo -e "${GREEN}✅ Servers started successfully!${NC}"
+echo -e "${GREEN}✅ All servers started successfully!${NC}"
 echo -e "${BLUE}📱 Frontend: http://localhost:5173${NC}"
 echo -e "${BLUE}🔧 Backend: http://localhost:5000${NC}"
 echo -e "${BLUE}🏥 Health Check: http://localhost:5000/api/health${NC}"
-echo -e "${YELLOW}Press Ctrl+C to stop both servers${NC}"
+echo -e "${BLUE}🗄️  Database: In-memory MongoDB (no installation required)${NC}"
+echo -e "${YELLOW}📧 Login: admin@company.com | 🔑 Password: admin123${NC}"
+echo -e "${YELLOW}Press Ctrl+C to stop all servers${NC}"
 
-# Wait for both processes
-wait $BACKEND_PID $FRONTEND_PID
+# Wait for all processes
+wait $DB_PID $BACKEND_PID $FRONTEND_PID
