@@ -136,8 +136,8 @@ const Login: React.FC = () => {
               </div>
             </div>
             <div className="mt-4 text-center text-sm text-gray-600">
-              <p>Email: <span className="font-mono bg-gray-100 px-2 py-1 rounded">admin@company.com</span></p>
-              <p className="mt-1">Password: <span className="font-mono bg-gray-100 px-2 py-1 rounded">admin123</span></p>
+              <p>Email: <span className="font-mono bg-gray-100 px-2 py-1 rounded">admin@yourcompany.com</span></p>
+              <p className="mt-1">Password: <span className="font-mono bg-gray-100 px-2 py-1 rounded">SecurePassword123!</span></p>
             </div>
           </div>
         </div>

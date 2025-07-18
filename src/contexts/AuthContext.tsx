@@ -1,15 +1,9 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: 'admin' | 'hr' | 'employee' | 'inventory_manager';
-  avatar?: string;
-}
+import { loginUser } from '../lib/auth';
+import { AuthUser } from '../types';
 
 interface AuthContextType {
-  user: User | null;
+  user: AuthUser | null;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
   isAuthenticated: boolean;
@@ -30,25 +24,26 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
 
   const login = async (email: string, password: string): Promise<boolean> => {
-    // Mock authentication
-    if (email === 'admin@company.com' && password === 'admin123') {
-      setUser({
-        id: '1',
-        name: 'Admin User',
-        email: 'admin@company.com',
-        role: 'admin',
-        avatar: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=1'
-      });
-      return true;
+    try {
+      const loggedInUser = await loginUser({ email, password });
+      if (loggedInUser) {
+        setUser(loggedInUser);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Login error in AuthContext:', error);
+      return false;
     }
-    return false;
   };
 
   const logout = () => {
     setUser(null);
+    // Clear token from localStorage
+    localStorage.removeItem('token');
   };
 
   const isAuthenticated = !!user;
