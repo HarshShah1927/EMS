@@ -491,6 +491,20 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
     apiService.getDispatches().then(res => {
       if (res.success && res.data) setDispatch(res.data);
     });
+
+    // Polling for auto-update
+    const interval = setInterval(() => {
+      apiService.getEmployees().then(res => {
+        if (res.success && res.data) setEmployees(res.data);
+      });
+      apiService.getInventory().then(res => {
+        if (res.success && res.data) setInventory(res.data);
+      });
+      apiService.getDispatches().then(res => {
+        if (res.success && res.data) setDispatch(res.data);
+      });
+    }, 30000); // 30 seconds
+    return () => clearInterval(interval);
   }, []);
 
   const addEmployee = async (employee: Omit<Employee, 'id'>) => {
