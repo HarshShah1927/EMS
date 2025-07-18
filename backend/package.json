@@ -9,7 +9,8 @@
     "setup": "node setup.js",
     "setup-dev-db": "node setup-dev-db.js",
     "setup-admin": "node setup-admin.js",
-    "setup-simple": "node setup-simple.js"
+    "setup-simple": "node setup-simple.js",
+    "create-admin": "node create-admin-now.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
