@@ -2,8 +2,22 @@ const mongoose = require('mongoose');
 
 const connectDB = async () => {
   try {
-    // Remove deprecated options - they're not needed in newer versions
-    const conn = await mongoose.connect(process.env.MONGODB_URI);
+    // Get MongoDB URI with fallback
+    const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/ems';
+    
+    console.log('🔧 Environment check:');
+    console.log(`   NODE_ENV: ${process.env.NODE_ENV || 'not set'}`);
+    console.log(`   MONGODB_URI: ${mongoUri}`);
+    console.log(`   JWT_SECRET: ${process.env.JWT_SECRET ? 'set' : 'not set'}`);
+    
+    if (!process.env.MONGODB_URI) {
+      console.log('⚠️  MONGODB_URI not found in environment variables');
+      console.log('💡 Using fallback: mongodb://localhost:27017/ems');
+    }
+    
+    // Connect to MongoDB
+    console.log('🔌 Connecting to MongoDB...');
+    const conn = await mongoose.connect(mongoUri);
 
     console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
     console.log(`📊 Database: ${conn.connection.name}`);
@@ -25,7 +39,24 @@ const connectDB = async () => {
     } else if (error.message.includes('IP')) {
       console.error('🔧 Network Access Error - Check IP whitelist');
       console.error('💡 Add your IP to MongoDB Atlas Network Access');
+    } else if (error.message.includes('ECONNREFUSED')) {
+      console.error('🔧 Connection Refused - MongoDB is not running');
+      console.error('💡 Solutions:');
+      console.error('   1. Use MongoDB Atlas (free cloud database)');
+      console.error('   2. Install MongoDB locally');
+      console.error('   3. Use Docker: docker run -d -p 27017:27017 mongo');
+      console.error('   4. Use in-memory database: npm run setup-dev-db');
+    } else if (error.message.includes('uri parameter')) {
+      console.error('🔧 Invalid MongoDB URI');
+      console.error('💡 Check your MONGODB_URI in .env file');
+      console.error('💡 Current URI:', process.env.MONGODB_URI || 'undefined');
     }
+    
+    console.error('\n🚀 Quick Fix: Use MongoDB Atlas');
+    console.error('   1. Go to https://cloud.mongodb.com');
+    console.error('   2. Create free account and cluster');
+    console.error('   3. Get connection string');
+    console.error('   4. Update MONGODB_URI in backend/.env');
     
     process.exit(1);
   }

@@ -5,8 +5,8 @@ const rateLimit = require('express-rate-limit');
 const dotenv = require('dotenv');
 const path = require('path');
 
-// Load environment variables
-dotenv.config();
+// Load environment variables from the backend directory
+dotenv.config({ path: path.join(__dirname, '.env') });
 
 // Import database connection
 const connectDB = require('./config/database');
