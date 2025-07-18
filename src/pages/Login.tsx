@@ -261,11 +261,11 @@ const Login: React.FC = () => {
 
           {/* Registration Form */}
           {activeTab === 'register' && (
-            <form className="space-y-6" onSubmit={handleRegisterSubmit}>
+            <form className="space-y-6 bg-gradient-to-br from-purple-50 to-blue-50 p-6 rounded-xl shadow-lg border border-blue-100" onSubmit={handleRegisterSubmit}>
+              <h3 className="text-xl font-bold text-center text-blue-700 mb-2">Create Your Account</h3>
+              <div className="text-xs text-gray-500 text-center mb-4">All fields are required unless marked optional.</div>
               <div>
-                <label htmlFor="register-name" className="block text-sm font-medium text-gray-700">
-                  Full Name
-                </label>
+                <label htmlFor="register-name" className="block text-sm font-medium text-gray-700">Full Name</label>
                 <div className="mt-1 relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <User className="h-5 w-5 text-gray-400" />
@@ -276,18 +276,19 @@ const Login: React.FC = () => {
                     type="text"
                     autoComplete="name"
                     required
+                    minLength={2}
                     className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                     placeholder="Enter your full name"
                     value={registerData.name}
                     onChange={(e) => setRegisterData({ ...registerData, name: e.target.value })}
                   />
+                  {registerData.name && registerData.name.length < 2 && (
+                    <div className="text-xs text-red-500 mt-1 ml-2">Name must be at least 2 characters.</div>
+                  )}
                 </div>
               </div>
-
               <div>
-                <label htmlFor="register-email" className="block text-sm font-medium text-gray-700">
-                  Email address
-                </label>
+                <label htmlFor="register-email" className="block text-sm font-medium text-gray-700">Email address</label>
                 <div className="mt-1 relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <Mail className="h-5 w-5 text-gray-400" />
@@ -305,11 +306,8 @@ const Login: React.FC = () => {
                   />
                 </div>
               </div>
-
               <div>
-                <label htmlFor="register-phone" className="block text-sm font-medium text-gray-700">
-                  Phone Number
-                </label>
+                <label htmlFor="register-phone" className="block text-sm font-medium text-gray-700">Phone Number</label>
                 <div className="mt-1 relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <Phone className="h-5 w-5 text-gray-400" />
@@ -320,18 +318,19 @@ const Login: React.FC = () => {
                     type="tel"
                     autoComplete="tel"
                     required
+                    pattern="[0-9]{10,15}"
                     className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                     placeholder="Enter your phone number"
                     value={registerData.phone}
                     onChange={(e) => setRegisterData({ ...registerData, phone: e.target.value })}
                   />
+                  {registerData.phone && !/^\d{10,15}$/.test(registerData.phone) && (
+                    <div className="text-xs text-red-500 mt-1 ml-2">Enter a valid phone number.</div>
+                  )}
                 </div>
               </div>
-
               <div>
-                <label htmlFor="register-department" className="block text-sm font-medium text-gray-700">
-                  Department
-                </label>
+                <label htmlFor="register-department" className="block text-sm font-medium text-gray-700">Department</label>
                 <div className="mt-1 relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <Briefcase className="h-5 w-5 text-gray-400" />
@@ -346,18 +345,13 @@ const Login: React.FC = () => {
                   >
                     <option value="">Select Department</option>
                     {departments.map((dept) => (
-                      <option key={dept} value={dept}>
-                        {dept}
-                      </option>
+                      <option key={dept} value={dept}>{dept}</option>
                     ))}
                   </select>
                 </div>
               </div>
-
               <div>
-                <label htmlFor="register-employeeId" className="block text-sm font-medium text-gray-700">
-                  Employee ID <span className="text-gray-500">(Optional)</span>
-                </label>
+                <label htmlFor="register-employeeId" className="block text-sm font-medium text-gray-700">Employee ID <span className="text-gray-500">(Optional)</span></label>
                 <div className="mt-1 relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <IdCard className="h-5 w-5 text-gray-400" />
@@ -373,11 +367,8 @@ const Login: React.FC = () => {
                   />
                 </div>
               </div>
-
               <div>
-                <label htmlFor="register-password" className="block text-sm font-medium text-gray-700">
-                  Password
-                </label>
+                <label htmlFor="register-password" className="block text-sm font-medium text-gray-700">Password</label>
                 <div className="mt-1 relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <Lock className="h-5 w-5 text-gray-400" />
@@ -388,6 +379,7 @@ const Login: React.FC = () => {
                     type={showPassword ? 'text' : 'password'}
                     autoComplete="new-password"
                     required
+                    minLength={6}
                     className="appearance-none block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                     placeholder="Enter your password (min 6 characters)"
                     value={registerData.password}
@@ -406,13 +398,13 @@ const Login: React.FC = () => {
                       )}
                     </button>
                   </div>
+                  {registerData.password && registerData.password.length < 6 && (
+                    <div className="text-xs text-red-500 mt-1 ml-2">Password must be at least 6 characters.</div>
+                  )}
                 </div>
               </div>
-
               <div>
-                <label htmlFor="register-confirmPassword" className="block text-sm font-medium text-gray-700">
-                  Confirm Password
-                </label>
+                <label htmlFor="register-confirmPassword" className="block text-sm font-medium text-gray-700">Confirm Password</label>
                 <div className="mt-1 relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <Lock className="h-5 w-5 text-gray-400" />
@@ -441,9 +433,11 @@ const Login: React.FC = () => {
                       )}
                     </button>
                   </div>
+                  {registerData.confirmPassword && registerData.confirmPassword !== registerData.password && (
+                    <div className="text-xs text-red-500 mt-1 ml-2">Passwords do not match.</div>
+                  )}
                 </div>
               </div>
-
               <div>
                 <button
                   type="submit"
@@ -453,7 +447,6 @@ const Login: React.FC = () => {
                   {isLoading ? 'Creating Account...' : 'Create Account'}
                 </button>
               </div>
-
               <div className="text-xs text-gray-600 text-center">
                 <p>Note: Your account will require admin approval before you can sign in.</p>
               </div>
