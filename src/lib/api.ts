@@ -219,6 +219,106 @@ class ApiService {
     });
   }
 
+  // Employee endpoints
+  async getEmployees(): Promise<ApiResponse<Employee[]>> {
+    return this.request<Employee[]>('/employee');
+  }
+  async getEmployee(id: string): Promise<ApiResponse<Employee>> {
+    return this.request<Employee>(`/employee/${id}`);
+  }
+  async createEmployee(data: Partial<Employee>): Promise<ApiResponse<Employee>> {
+    return this.request<Employee>('/employee', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+  async updateEmployee(id: string, data: Partial<Employee>): Promise<ApiResponse<Employee>> {
+    return this.request<Employee>(`/employee/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+  async deleteEmployee(id: string): Promise<ApiResponse<null>> {
+    return this.request<null>(`/employee/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Inventory endpoints
+  async getInventory(): Promise<ApiResponse<any[]>> {
+    return this.request<any[]>('/inventory');
+  }
+  async getInventoryItem(id: string): Promise<ApiResponse<any>> {
+    return this.request<any>(`/inventory/${id}`);
+  }
+  async createInventoryItem(data: Partial<any>): Promise<ApiResponse<any>> {
+    return this.request<any>('/inventory', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+  async updateInventoryItem(id: string, data: Partial<any>): Promise<ApiResponse<any>> {
+    return this.request<any>(`/inventory/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+  async deleteInventoryItem(id: string): Promise<ApiResponse<null>> {
+    return this.request<null>(`/inventory/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Dispatch endpoints
+  async getDispatches(): Promise<ApiResponse<any[]>> {
+    return this.request<any[]>('/dispatch');
+  }
+  async getDispatch(id: string): Promise<ApiResponse<any>> {
+    return this.request<any>(`/dispatch/${id}`);
+  }
+  async createDispatch(data: Partial<any>): Promise<ApiResponse<any>> {
+    return this.request<any>('/dispatch', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+  async updateDispatch(id: string, data: Partial<any>): Promise<ApiResponse<any>> {
+    return this.request<any>(`/dispatch/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+  async deleteDispatch(id: string): Promise<ApiResponse<null>> {
+    return this.request<null>(`/dispatch/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Salary endpoints
+  async getSalaries(): Promise<ApiResponse<any[]>> {
+    return this.request<any[]>('/salary');
+  }
+  async getSalary(id: string): Promise<ApiResponse<any>> {
+    return this.request<any>(`/salary/${id}`);
+  }
+  async createSalary(data: Partial<any>): Promise<ApiResponse<any>> {
+    return this.request<any>('/salary', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+  async updateSalary(id: string, data: Partial<any>): Promise<ApiResponse<any>> {
+    return this.request<any>(`/salary/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+  async deleteSalary(id: string): Promise<ApiResponse<null>> {
+    return this.request<null>(`/salary/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
   // Health check
   async healthCheck(): Promise<ApiResponse<{
     message: string;

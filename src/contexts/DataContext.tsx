@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, ReactNode, useEffect } from
 import { generatePayslipPDF, generateInvoicePDF, generateDispatchSlipPDF, generateReportPDF } from '../utils/pdfGenerator';
 import { sendPayslipEmail, sendInvoiceEmail } from '../utils/emailService';
 import { sendLowStockAlert } from '../utils/smsService';
+import apiService from '../lib/api';
 
 interface Employee {
   id: string;
@@ -476,46 +477,35 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
     return () => clearInterval(interval);
   }, [inventory, invoices, activities]);
 
-  // Employee operations
-  const addEmployee = (employee: Omit<Employee, 'id'>) => {
-    const newEmployee = { ...employee, id: Date.now().toString() };
-    setEmployees(prev => [...prev, newEmployee]);
-    addActivity({
-      type: 'employee',
-      message: `New employee ${employee.name} added to ${employee.department}`
+  // Replace local state logic for employees, inventory, and dispatch with backend API calls
+  useEffect(() => {
+    // Fetch employees
+    apiService.getEmployees().then(res => {
+      if (res.success && res.data) setEmployees(res.data);
     });
-    addNotification({
-      title: 'New Employee Added',
-      message: `${employee.name} has been added to the system`,
-      type: 'success',
-      read: false
+    // Fetch inventory
+    apiService.getInventory().then(res => {
+      if (res.success && res.data) setInventory(res.data);
     });
+    // Fetch dispatch
+    apiService.getDispatches().then(res => {
+      if (res.success && res.data) setDispatch(res.data);
+    });
+  }, []);
+
+  const addEmployee = async (employee: Omit<Employee, 'id'>) => {
+    const res = await apiService.createEmployee(employee);
+    if (res.success && res.data) setEmployees(prev => [...prev, res.data]);
+  };
+  const updateEmployee = async (id: string, updates: Partial<Employee>) => {
+    const res = await apiService.updateEmployee(id, updates);
+    if (res.success && res.data) setEmployees(prev => prev.map(emp => emp._id === id ? res.data : emp));
+  };
+  const deleteEmployee = async (id: string) => {
+    const res = await apiService.deleteEmployee(id);
+    if (res.success) setEmployees(prev => prev.filter(emp => emp._id !== id));
   };
 
-  const updateEmployee = (id: string, updates: Partial<Employee>) => {
-    setEmployees(prev => prev.map(emp => emp.id === id ? { ...emp, ...updates } : emp));
-    const employee = employees.find(emp => emp.id === id);
-    if (employee) {
-      addActivity({
-        type: 'employee',
-        message: `Employee ${employee.name} information updated`
-      });
-    }
-  };
-
-  const deleteEmployee = (id: string) => {
-    const employee = employees.find(emp => emp.id === id);
-    setEmployees(prev => prev.filter(emp => emp.id !== id));
-    setAttendance(prev => prev.filter(att => att.employeeId !== id));
-    if (employee) {
-      addActivity({
-        type: 'employee',
-        message: `Employee ${employee.name} removed from system`
-      });
-    }
-  };
-
-  // Attendance operations
   const addAttendance = (record: Omit<AttendanceRecord, 'id'>) => {
     const newRecord = { ...record, id: Date.now().toString() };
     setAttendance(prev => [...prev, newRecord]);
@@ -542,7 +532,6 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
     }
   };
 
-  // Invoice operations
   const addInvoice = (invoice: Omit<Invoice, 'id'>) => {
     const newInvoice = { ...invoice, id: Date.now().toString() };
     setInvoices(prev => [...prev, newInvoice]);
@@ -589,63 +578,30 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
     }
   };
 
-  // Inventory operations
-  const updateInventory = (id: string, updates: Partial<InventoryItem>) => {
-    setInventory(prev => prev.map(item => {
-      if (item.id === id) {
-        const updatedItem = { ...item, ...updates };
-        
-        // Check for low stock and send alert
-        if (updatedItem.quantity <= 5 && updatedItem.quantity > 0 && updatedItem.status !== 'low_stock') {
-          updatedItem.status = 'low_stock';
-          if (updatedItem.alertPhone) {
-            sendLowStockAlert(updatedItem, updatedItem.alertPhone);
-          }
-          addNotification({
-            title: 'Low Stock Alert',
-            message: `${updatedItem.name} is running low (${updatedItem.quantity} ${updatedItem.unit} remaining)`,
-            type: 'warning',
-            read: false
-          });
-        } else if (updatedItem.quantity === 0) {
-          updatedItem.status = 'out_of_stock';
-          addNotification({
-            title: 'Out of Stock',
-            message: `${updatedItem.name} is out of stock`,
-            type: 'error',
-            read: false
-          });
-        } else if (updatedItem.quantity > 5) {
-          updatedItem.status = 'in_stock';
-        }
-        
-        return updatedItem;
-      }
-      return item;
-    }));
+  const addInventory = async (item: Omit<InventoryItem, 'id'>) => {
+    const res = await apiService.createInventoryItem(item);
+    if (res.success && res.data) setInventory(prev => [...prev, res.data]);
+  };
+  const updateInventory = async (id: string, updates: Partial<InventoryItem>) => {
+    const res = await apiService.updateInventoryItem(id, updates);
+    if (res.success && res.data) setInventory(prev => prev.map(item => item._id === id ? res.data : item));
+  };
+  const deleteInventoryItem = async (id: string) => {
+    const res = await apiService.deleteInventoryItem(id);
+    if (res.success) setInventory(prev => prev.filter(item => item._id !== id));
   };
 
-  const deleteInventoryItem = (id: string) => {
-    const item = inventory.find(item => item.id === id);
-    setInventory(prev => prev.filter(item => item.id !== id));
-    if (item) {
-      addActivity({
-        type: 'inventory',
-        message: `Inventory item ${item.name} removed`
-      });
-    }
+  const addDispatch = async (dispatchItem: Omit<DispatchItem, 'id'>) => {
+    const res = await apiService.createDispatch(dispatchItem);
+    if (res.success && res.data) setDispatch(prev => [...prev, res.data]);
   };
-
-  // Dispatch operations
-  const updateDispatch = (id: string, updates: Partial<DispatchItem>) => {
-    setDispatch(prev => prev.map(item => item.id === id ? { ...item, ...updates } : item));
-    const dispatchItem = dispatch.find(item => item.id === id);
-    if (dispatchItem && updates.status) {
-      addActivity({
-        type: 'dispatch',
-        message: `Order ${dispatchItem.orderNumber} status updated to ${updates.status}`
-      });
-    }
+  const updateDispatch = async (id: string, updates: Partial<DispatchItem>) => {
+    const res = await apiService.updateDispatch(id, updates);
+    if (res.success && res.data) setDispatch(prev => prev.map(item => item._id === id ? res.data : item));
+  };
+  const deleteDispatch = async (id: string) => {
+    const res = await apiService.deleteDispatch(id);
+    if (res.success) setDispatch(prev => prev.filter(item => item._id !== id));
   };
 
   // Admin operations
