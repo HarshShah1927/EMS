@@ -12,9 +12,32 @@ app.use(express.json());
 app.post('/api/auth/login', (req, res) => {
   const { email, password } = req.body;
   
-  console.log('Login attempt:', { email, password });
+  console.log('🔍 Login attempt received:');
+  console.log('  Email:', JSON.stringify(email));
+  console.log('  Password:', JSON.stringify(password));
+  console.log('  Email length:', email ? email.length : 'undefined');
+  console.log('  Password length:', password ? password.length : 'undefined');
+  console.log('  Email type:', typeof email);
+  console.log('  Password type:', typeof password);
   
-  if (email === 'admin@company.com' && password === 'admin123') {
+  // Expected values
+  const expectedEmail = 'admin@company.com';
+  const expectedPassword = 'admin123';
+  
+  console.log('🎯 Expected values:');
+  console.log('  Expected email:', JSON.stringify(expectedEmail));
+  console.log('  Expected password:', JSON.stringify(expectedPassword));
+  
+  // Exact comparison
+  const emailMatch = email === expectedEmail;
+  const passwordMatch = password === expectedPassword;
+  
+  console.log('✅ Comparison results:');
+  console.log('  Email match:', emailMatch);
+  console.log('  Password match:', passwordMatch);
+  
+  if (emailMatch && passwordMatch) {
+    console.log('🎉 Login successful!');
     res.json({
       success: true,
       message: 'Login successful',
@@ -32,6 +55,7 @@ app.post('/api/auth/login', (req, res) => {
       }
     });
   } else {
+    console.log('❌ Login failed!');
     res.status(401).json({
       success: false,
       message: 'Invalid email or password'
@@ -99,4 +123,6 @@ app.listen(PORT, () => {
   console.log('');
   console.log('💡 This is a mock server for testing the frontend');
   console.log('💡 For full functionality, set up MongoDB Atlas');
+  console.log('');
+  console.log('🔍 Enhanced debugging enabled - will show detailed credential comparison');
 });
