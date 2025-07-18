@@ -4,7 +4,7 @@ import { DollarSign, Download, Eye, Calculator, TrendingUp, Users, Mail } from '
 import apiService from '../lib/api';
 
 const Salary: React.FC = () => {
-  const { employees, downloadPayslip, sendPayslipByEmail } = useData();
+  const { employees, downloadPayslip, sendPayslipByEmail, updateEmployee } = useData();
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
   const [showPayslipModal, setShowPayslipModal] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
@@ -89,6 +89,10 @@ const Salary: React.FC = () => {
     setSelectedAdvance(null);
     setAdvanceAction(null);
   };
+
+  const [showEditSalaryModal, setShowEditSalaryModal] = useState(false);
+  const [editSalaryEmployee, setEditSalaryEmployee] = useState<any>(null);
+  const [editSalaryValue, setEditSalaryValue] = useState('');
 
   return (
     <div className="space-y-6">
@@ -232,6 +236,19 @@ const Salary: React.FC = () => {
                         >
                           <Mail className="h-4 w-4" />
                         </button>
+                        {user.role === 'admin' && (
+                          <button
+                            onClick={() => {
+                              setEditSalaryEmployee(employee);
+                              setEditSalaryValue(employee.salary.toString());
+                              setShowEditSalaryModal(true);
+                            }}
+                            className="text-orange-600 hover:text-orange-900 flex items-center gap-1"
+                            title="Edit Salary"
+                          >
+                            Edit
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -465,6 +482,27 @@ const Salary: React.FC = () => {
                 <button className="flex-1 bg-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-400 transition-colors" onClick={() => { setSelectedAdvance(null); setAdvanceAction(null); }}>Cancel</button>
               </div>
             )}
+          </div>
+        </div>
+      )}
+      {showEditSalaryModal && editSalaryEmployee && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md">
+            <h2 className="text-xl font-bold mb-4">Edit Salary for {editSalaryEmployee.name}</h2>
+            <form onSubmit={async e => {
+              e.preventDefault();
+              await updateEmployee(editSalaryEmployee._id || editSalaryEmployee.id, { salary: Number(editSalaryValue) });
+              setShowEditSalaryModal(false);
+            }} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Salary</label>
+                <input type="number" required min={1} className="w-full border border-gray-300 rounded-lg px-3 py-2" value={editSalaryValue} onChange={e => setEditSalaryValue(e.target.value)} />
+              </div>
+              <div className="flex gap-2 mt-4">
+                <button type="submit" className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors">Save</button>
+                <button type="button" className="flex-1 bg-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-400 transition-colors" onClick={() => setShowEditSalaryModal(false)}>Cancel</button>
+              </div>
+            </form>
           </div>
         </div>
       )}
