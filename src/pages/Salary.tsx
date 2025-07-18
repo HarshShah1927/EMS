@@ -1,12 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useData } from '../contexts/DataContext';
 import { DollarSign, Download, Eye, Calculator, TrendingUp, Users, Mail } from 'lucide-react';
+import apiService from '../lib/api';
 
 const Salary: React.FC = () => {
   const { employees, downloadPayslip, sendPayslipByEmail } = useData();
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
   const [showPayslipModal, setShowPayslipModal] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
+
+  // Advance Salary State
+  const [advanceRequests, setAdvanceRequests] = useState<any[]>([]);
+  const [advanceLoading, setAdvanceLoading] = useState(false);
+  const [showAdvanceModal, setShowAdvanceModal] = useState(false);
+  const [advanceForm, setAdvanceForm] = useState({ amount: '', reason: '', deductionSchedule: 'single_month', notes: '' });
+  const [selectedAdvance, setSelectedAdvance] = useState<any>(null);
+  const [advanceAction, setAdvanceAction] = useState<'approve' | 'reject' | 'pay' | null>(null);
+  const user = { role: 'admin' }; // TODO: get from context/auth
 
   const calculateSalary = (employee: any) => {
     const baseSalary = employee.salary;
@@ -37,6 +47,47 @@ const Salary: React.FC = () => {
   const handleEmailPayslip = async (employee: any) => {
     const monthName = new Date(selectedMonth + '-01').toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
     await sendPayslipByEmail(employee, monthName);
+  };
+
+  // Fetch advance salary requests
+  useEffect(() => {
+    setAdvanceLoading(true);
+    apiService.getAdvanceSalaries().then(res => {
+      if (res.success && res.data) setAdvanceRequests(res.data);
+      setAdvanceLoading(false);
+    });
+  }, []);
+
+  // Request advance salary
+  const handleAdvanceRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAdvanceLoading(true);
+    await apiService.createAdvanceSalary({
+      employeeId: '1', // TODO: get from auth context
+      amount: Number(advanceForm.amount),
+      reason: advanceForm.reason,
+      deductionSchedule: advanceForm.deductionSchedule,
+      notes: advanceForm.notes
+    });
+    const res = await apiService.getAdvanceSalaries();
+    if (res.success && res.data) setAdvanceRequests(res.data);
+    setAdvanceLoading(false);
+    setShowAdvanceModal(false);
+    setAdvanceForm({ amount: '', reason: '', deductionSchedule: 'single_month', notes: '' });
+  };
+
+  // Approve/Reject/Pay/Delete actions
+  const handleAdvanceAction = async (action: 'approve' | 'reject' | 'pay' | 'delete', advance: any, extra?: any) => {
+    setAdvanceLoading(true);
+    if (action === 'approve') await apiService.approveAdvanceSalary(advance._id);
+    if (action === 'reject') await apiService.rejectAdvanceSalary(advance._id, extra?.rejectionReason || '');
+    if (action === 'pay') await apiService.markAdvanceSalaryAsPaid(advance._id, extra);
+    if (action === 'delete') await apiService.deleteAdvanceSalary(advance._id);
+    const res = await apiService.getAdvanceSalaries();
+    if (res.success && res.data) setAdvanceRequests(res.data);
+    setAdvanceLoading(false);
+    setSelectedAdvance(null);
+    setAdvanceAction(null);
   };
 
   return (
@@ -277,6 +328,143 @@ const Salary: React.FC = () => {
                 Send Email
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Advance Salary Section */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+        <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+          <h2 className="text-lg font-medium text-gray-900">Advance Salary Requests</h2>
+          <button
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            onClick={() => setShowAdvanceModal(true)}
+          >
+            Request Advance Salary
+          </button>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employee</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reason</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Schedule</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {advanceRequests.map((req) => (
+                <tr key={req._id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap">{req.employeeName || req.employeeId}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">${req.amount}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">{req.reason}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">{req.deductionSchedule.replace('_', ' ')}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${req.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : req.status === 'approved' ? 'bg-blue-100 text-blue-800' : req.status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{req.status}</span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap flex gap-2">
+                    {user.role === 'admin' && req.status === 'pending' && (
+                      <>
+                        <button className="text-green-600 hover:text-green-900" onClick={() => { setSelectedAdvance(req); setAdvanceAction('approve'); }}>Approve</button>
+                        <button className="text-red-600 hover:text-red-900" onClick={() => { setSelectedAdvance(req); setAdvanceAction('reject'); }}>Reject</button>
+                      </>
+                    )}
+                    {user.role === 'admin' && req.status === 'approved' && (
+                      <button className="text-blue-600 hover:text-blue-900" onClick={() => { setSelectedAdvance(req); setAdvanceAction('pay'); }}>Mark as Paid</button>
+                    )}
+                    {user.role === 'admin' && (
+                      <button className="text-gray-400 hover:text-gray-700" onClick={() => handleAdvanceAction('delete', req)}>Delete</button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {/* Advance Salary Modal */}
+      {showAdvanceModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md">
+            <h2 className="text-xl font-bold mb-4">Request Advance Salary</h2>
+            <form className="space-y-4" onSubmit={handleAdvanceRequest}>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Amount</label>
+                <input type="number" required min={1} className="w-full border border-gray-300 rounded-lg px-3 py-2" value={advanceForm.amount} onChange={e => setAdvanceForm(f => ({ ...f, amount: e.target.value }))} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Reason</label>
+                <input type="text" required className="w-full border border-gray-300 rounded-lg px-3 py-2" value={advanceForm.reason} onChange={e => setAdvanceForm(f => ({ ...f, reason: e.target.value }))} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Deduction Schedule</label>
+                <select className="w-full border border-gray-300 rounded-lg px-3 py-2" value={advanceForm.deductionSchedule} onChange={e => setAdvanceForm(f => ({ ...f, deductionSchedule: e.target.value }))}>
+                  <option value="single_month">Single Month</option>
+                  <option value="two_months">Two Months</option>
+                  <option value="three_months">Three Months</option>
+                  <option value="custom">Custom</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Notes (optional)</label>
+                <textarea className="w-full border border-gray-300 rounded-lg px-3 py-2" value={advanceForm.notes} onChange={e => setAdvanceForm(f => ({ ...f, notes: e.target.value }))} />
+              </div>
+              <div className="flex gap-2 mt-4">
+                <button type="submit" className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors">Submit</button>
+                <button type="button" className="flex-1 bg-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-400 transition-colors" onClick={() => setShowAdvanceModal(false)}>Cancel</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* Advance Salary Action Modal */}
+      {selectedAdvance && advanceAction && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md">
+            <h2 className="text-xl font-bold mb-4">{advanceAction === 'approve' ? 'Approve' : advanceAction === 'reject' ? 'Reject' : 'Mark as Paid'} Advance Salary</h2>
+            {advanceAction === 'reject' ? (
+              <form onSubmit={e => { e.preventDefault(); handleAdvanceAction('reject', selectedAdvance, { rejectionReason: (e.target as any).rejectionReason.value }); }} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Rejection Reason</label>
+                  <input name="rejectionReason" required className="w-full border border-gray-300 rounded-lg px-3 py-2" />
+                </div>
+                <div className="flex gap-2 mt-4">
+                  <button type="submit" className="flex-1 bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition-colors">Reject</button>
+                  <button type="button" className="flex-1 bg-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-400 transition-colors" onClick={() => { setSelectedAdvance(null); setAdvanceAction(null); }}>Cancel</button>
+                </div>
+              </form>
+            ) : advanceAction === 'pay' ? (
+              <form onSubmit={e => { e.preventDefault(); handleAdvanceAction('pay', selectedAdvance, { paymentMethod: (e.target as any).paymentMethod.value, deductionStartMonth: (e.target as any).deductionStartMonth.value, notes: (e.target as any).notes.value }); }} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Payment Method</label>
+                  <select name="paymentMethod" required className="w-full border border-gray-300 rounded-lg px-3 py-2">
+                    <option value="cash">Cash</option>
+                    <option value="bank_transfer">Bank Transfer</option>
+                    <option value="cheque">Cheque</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Deduction Start Month</label>
+                  <input name="deductionStartMonth" type="month" required className="w-full border border-gray-300 rounded-lg px-3 py-2" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Notes (optional)</label>
+                  <textarea name="notes" className="w-full border border-gray-300 rounded-lg px-3 py-2" />
+                </div>
+                <div className="flex gap-2 mt-4">
+                  <button type="submit" className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors">Mark as Paid</button>
+                  <button type="button" className="flex-1 bg-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-400 transition-colors" onClick={() => { setSelectedAdvance(null); setAdvanceAction(null); }}>Cancel</button>
+                </div>
+              </form>
+            ) : (
+              <div className="flex gap-2 mt-4">
+                <button className="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition-colors" onClick={() => handleAdvanceAction('approve', selectedAdvance)}>Approve</button>
+                <button className="flex-1 bg-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-400 transition-colors" onClick={() => { setSelectedAdvance(null); setAdvanceAction(null); }}>Cancel</button>
+              </div>
+            )}
           </div>
         </div>
       )}
