@@ -82,25 +82,22 @@ const Reports: React.FC = () => {
   const financialReport = generateFinancialReport();
 
   const handleDownloadReport = async () => {
-    let reportData;
-    
-    switch (reportType) {
-      case 'employee':
-        reportData = { employees, ...employeeReport };
-        break;
-      case 'financial':
-        reportData = { 
-          totalRevenue: stats.totalRevenue,
-          paidInvoices: stats.paidInvoices,
-          pendingInvoices: invoices.filter(inv => inv.status === 'pending').length,
-          invoices
-        };
-        break;
-      default:
-        reportData = { employees, stats };
+    let endpoint = '';
+    if (reportType === 'employee') endpoint = '/api/report/salary';
+    else if (reportType === 'financial') endpoint = '/api/report/dispatch';
+    else endpoint = '/api/report/inventory';
+    const res = await fetch(endpoint, { credentials: 'include' });
+    if (res.ok) {
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${reportType}_report.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
     }
-    
-    await downloadReport(reportType, reportData);
   };
 
   const renderPowerBIStyleDashboard = () => (
