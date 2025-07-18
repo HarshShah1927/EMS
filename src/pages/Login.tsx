@@ -4,8 +4,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { Eye, EyeOff, Lock, Mail, Building } from 'lucide-react';
 
 const Login: React.FC = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('admin@yourcompany.com');
+  const [password, setPassword] = useState('SecurePassword123!');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');

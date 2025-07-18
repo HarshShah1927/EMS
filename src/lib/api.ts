@@ -30,15 +30,28 @@ class ApiService {
         headers,
       });
 
+      // Check if response is JSON
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('Server response is not JSON');
+      }
+
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'API request failed');
+        throw new Error(data.message || `HTTP ${response.status}: ${response.statusText}`);
       }
 
       return data;
     } catch (error) {
       console.error('API request error:', error);
+      console.error('Request details:', { url, method: options.method || 'GET' });
+      
+      // Re-throw with more context
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        throw new Error('Network error: Unable to connect to server. Please check if the backend is running.');
+      }
+      
       throw error;
     }
   }
