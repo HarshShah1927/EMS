@@ -15,6 +15,12 @@ class ApiService {
   ): Promise<ApiResponse<T>> {
     const url = `${API_BASE_URL}${endpoint}`;
     
+    console.log('🔍 API Request:', {
+      url,
+      method: options.method || 'GET',
+      hasToken: !!this.token
+    });
+    
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       ...(options.headers as Record<string, string>),
@@ -30,16 +36,33 @@ class ApiService {
         headers,
       });
 
+      console.log('📡 API Response:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok
+      });
+
       const data = await response.json();
+      console.log('📄 Response Data:', data);
 
       if (!response.ok) {
-        throw new Error(data.message || 'API request failed');
+        const errorMessage = data.message || `HTTP ${response.status}: ${response.statusText}`;
+        console.error('❌ API Error:', errorMessage);
+        throw new Error(errorMessage);
       }
 
       return data;
     } catch (error) {
-      console.error('API request error:', error);
-      throw error;
+      console.error('💥 API request error:', error);
+      
+      // Handle different types of errors
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        throw new Error('Network error: Unable to connect to server. Make sure the backend is running on port 5000.');
+      } else if (error instanceof Error) {
+        throw new Error(`Server error during login: ${error.message}`);
+      } else {
+        throw new Error('Unknown error occurred during API request');
+      }
     }
   }
 
