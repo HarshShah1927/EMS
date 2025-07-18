@@ -256,6 +256,193 @@ router.put('/profile', protect, [
   }
 });
 
+// @desc    Register new user
+// @route   POST /api/auth/register
+// @access  Public
+router.post('/register', [
+  body('name').trim().isLength({ min: 2 }).withMessage('Name must be at least 2 characters'),
+  body('email').isEmail().normalizeEmail(),
+  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+  body('department').trim().notEmpty().withMessage('Department is required'),
+  body('phone').trim().notEmpty().withMessage('Phone number is required'),
+  body('employeeId').optional().trim()
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation errors',
+        errors: errors.array()
+      });
+    }
+
+    const { name, email, password, department, phone, employeeId } = req.body;
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: 'User with this email already exists'
+      });
+    }
+
+    // Check if employeeId is provided and already exists
+    if (employeeId) {
+      const existingEmployeeId = await User.findOne({ employeeId });
+      if (existingEmployeeId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Employee ID already exists'
+        });
+      }
+    }
+
+    // Create new user (inactive by default, requires admin approval)
+    const newUser = new User({
+      name,
+      email,
+      password,
+      department,
+      phone,
+      employeeId: employeeId || `EMP${Date.now()}`, // Auto-generate if not provided
+      role: 'employee', // Default role
+      isActive: false // Requires admin approval
+    });
+
+    await newUser.save();
+
+    res.status(201).json({
+      success: true,
+      message: 'Registration successful! Your account is pending admin approval.',
+      data: {
+        user: {
+          id: newUser._id,
+          name: newUser.name,
+          email: newUser.email,
+          department: newUser.department,
+          employeeId: newUser.employeeId,
+          isActive: newUser.isActive
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Registration error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error during registration'
+    });
+  }
+});
+
+// @desc    Get pending users (Admin only)
+// @route   GET /api/auth/pending-users
+// @access  Private (Admin only)
+router.get('/pending-users', protect, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Admin role required.'
+      });
+    }
+
+    const pendingUsers = await User.find({ isActive: false }).select('-password');
+    
+    res.json({
+      success: true,
+      data: pendingUsers
+    });
+  } catch (error) {
+    console.error('Get pending users error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while fetching pending users'
+    });
+  }
+});
+
+// @desc    Approve user (Admin only)
+// @route   PUT /api/auth/approve-user/:userId
+// @access  Private (Admin only)
+router.put('/approve-user/:userId', protect, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Admin role required.'
+      });
+    }
+
+    const { userId } = req.params;
+    
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { isActive: true },
+      { new: true }
+    ).select('-password');
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: `User ${user.name} has been approved`,
+      data: user
+    });
+  } catch (error) {
+    console.error('Approve user error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while approving user'
+    });
+  }
+});
+
+// @desc    Reject user (Admin only)
+// @route   DELETE /api/auth/reject-user/:userId
+// @access  Private (Admin only)
+router.delete('/reject-user/:userId', protect, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Admin role required.'
+      });
+    }
+
+    const { userId } = req.params;
+    
+    const user = await User.findByIdAndDelete(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: `User ${user.name} has been rejected and removed`
+    });
+  } catch (error) {
+    console.error('Reject user error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while rejecting user'
+    });
+  }
+});
+
 // @desc    Logout user (client-side token removal)
 // @route   POST /api/auth/logout
 // @access  Private

@@ -80,6 +80,20 @@ class ApiService {
     return response;
   }
 
+  async register(userData: {
+    name: string;
+    email: string;
+    password: string;
+    department: string;
+    phone: string;
+    employeeId?: string;
+  }): Promise<ApiResponse<{ user: AuthUser }>> {
+    return this.request<{ user: AuthUser }>('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(userData),
+    });
+  }
+
   async logout(): Promise<ApiResponse<null>> {
     const response = await this.request<null>('/auth/logout', {
       method: 'POST',

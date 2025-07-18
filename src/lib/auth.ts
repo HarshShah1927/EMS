@@ -17,6 +17,32 @@ export const loginUser = async (credentials: LoginCredentials): Promise<AuthUser
   }
 };
 
+// Register function using API service
+export const registerUser = async (userData: {
+  name: string;
+  email: string;
+  password: string;
+  department: string;
+  phone: string;
+  employeeId?: string;
+}): Promise<{ success: boolean; message: string; user?: AuthUser }> => {
+  try {
+    const response = await apiService.register(userData);
+    
+    return {
+      success: response.success,
+      message: response.message,
+      user: response.data?.user
+    };
+  } catch (error: any) {
+    console.error('Registration error:', error);
+    return {
+      success: false,
+      message: error.message || 'Registration failed'
+    };
+  }
+};
+
 // Logout function
 export const logoutUser = async (): Promise<void> => {
   try {
