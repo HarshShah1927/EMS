@@ -3,7 +3,7 @@ import { useData } from '../contexts/DataContext';
 import { Truck, Package, Clock, CheckCircle, User, MapPin, Calendar, Download, Eye } from 'lucide-react';
 
 const Dispatch: React.FC = () => {
-  const { dispatch, updateDispatch, downloadDispatchSlip } = useData();
+  const { dispatch, updateDispatch, downloadDispatchSlip, deleteDispatch } = useData();
   const [statusFilter, setStatusFilter] = useState('all');
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedDispatch, setSelectedDispatch] = useState<any>(null);
@@ -221,6 +221,16 @@ const Dispatch: React.FC = () => {
               >
                 <Download className="h-4 w-4" />
                 Generate Slip
+              </button>
+              <button
+                onClick={async () => {
+                  if (window.confirm('Are you sure you want to delete this dispatch record?')) {
+                    await deleteDispatch(item._id || item.id);
+                  }
+                }}
+                className="flex-1 bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition-colors text-sm flex items-center justify-center gap-2"
+              >
+                Delete
               </button>
             </div>
           </div>
