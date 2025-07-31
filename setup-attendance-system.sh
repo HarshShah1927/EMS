@@ -13,19 +13,54 @@ NC='\033[0m' # No Color
 # Check if Node.js is installed
 if ! command -v node &> /dev/null; then
     echo -e "${RED}❌ Node.js is not installed. Please install Node.js first.${NC}"
+    echo "   Download from: https://nodejs.org/"
     exit 1
 fi
 
-# Check if MongoDB is running
-if ! pgrep -x "mongod" > /dev/null; then
-    echo -e "${YELLOW}⚠️  MongoDB is not running. Please start MongoDB first.${NC}"
-    echo "   - On macOS: brew services start mongodb-community"
-    echo "   - On Ubuntu: sudo systemctl start mongod"
-    echo "   - On Windows: net start MongoDB"
-    exit 1
-fi
+echo -e "${GREEN}✅ Node.js is installed: $(node --version)${NC}"
 
-echo -e "${GREEN}✅ Prerequisites check passed${NC}"
+# Check if MongoDB is installed and running
+echo -e "\n${BLUE}🔍 Checking MongoDB...${NC}"
+if ! command -v mongod &> /dev/null; then
+    echo -e "${YELLOW}⚠️  MongoDB is not installed.${NC}"
+    echo "   - On macOS: brew install mongodb-community"
+    echo "   - On Ubuntu: sudo apt install mongodb"
+    echo "   - On Windows: Download from mongodb.com"
+    echo ""
+    echo -e "${YELLOW}Continuing setup... You can install MongoDB later.${NC}"
+else
+    echo -e "${GREEN}✅ MongoDB is installed${NC}"
+    
+    # Try to start MongoDB if not running
+    if ! pgrep -x "mongod" > /dev/null; then
+        echo -e "${YELLOW}⚠️  MongoDB is not running. Attempting to start...${NC}"
+        
+        # Try different start methods based on OS
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            # macOS
+            brew services start mongodb-community 2>/dev/null || echo "Could not start MongoDB via brew"
+        elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
+            # Linux
+            sudo systemctl start mongod 2>/dev/null || echo "Could not start MongoDB via systemctl"
+        fi
+        
+        sleep 3
+        
+        if ! pgrep -x "mongod" > /dev/null; then
+            echo -e "${YELLOW}⚠️  Could not start MongoDB automatically.${NC}"
+            echo "   Please start MongoDB manually:"
+            echo "   - macOS: brew services start mongodb-community"
+            echo "   - Ubuntu: sudo systemctl start mongod"
+            echo "   - Windows: net start MongoDB"
+            echo ""
+            echo -e "${YELLOW}Continuing setup... Database features will not work until MongoDB is running.${NC}"
+        else
+            echo -e "${GREEN}✅ MongoDB is now running${NC}"
+        fi
+    else
+        echo -e "${GREEN}✅ MongoDB is already running${NC}"
+    fi
+fi
 
 # Setup Backend
 echo -e "\n${BLUE}📦 Setting up Backend...${NC}"
@@ -36,17 +71,37 @@ if [ ! -f ".env" ]; then
     cat > .env << EOL
 NODE_ENV=development
 PORT=5000
-MONGODB_URI=mongodb://localhost:27017/employee_management
-JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+MONGODB_URI=mongodb://localhost:27017/employee_management_system
+JWT_SECRET=your-super-secret-jwt-key-change-this-in-production-2024
+JWT_EXPIRE=7d
+DB_NAME=employee_management_system
+FRONTEND_URL=http://localhost:5173
 EOL
+    echo -e "${GREEN}✅ Backend .env file created${NC}"
+else
+    echo -e "${GREEN}✅ Backend .env file already exists${NC}"
 fi
 
 # Install backend dependencies
 echo -e "${BLUE}📦 Installing backend dependencies...${NC}"
 npm install
 
+# Test database connection and initialize if MongoDB is running
+if pgrep -x "mongod" > /dev/null; then
+    echo -e "\n${BLUE}🗄️  Initializing database...${NC}"
+    npm run db:init
+    
+    if [ $? -eq 0 ]; then
+        echo -e "${GREEN}✅ Database initialized successfully${NC}"
+    else
+        echo -e "${YELLOW}⚠️  Database initialization had issues, but continuing...${NC}"
+    fi
+else
+    echo -e "${YELLOW}⚠️  Skipping database initialization (MongoDB not running)${NC}"
+fi
+
 # Start backend in background
-echo -e "${BLUE}🚀 Starting backend server...${NC}"
+echo -e "\n${BLUE}🚀 Starting backend server...${NC}"
 npm start &
 BACKEND_PID=$!
 
