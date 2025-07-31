@@ -2,6 +2,17 @@ const mongoose = require('mongoose');
 
 const connectDB = async () => {
   try {
+    // Check if MONGODB_URI is defined
+    if (!process.env.MONGODB_URI) {
+      console.error('❌ MONGODB_URI environment variable is not set');
+      console.error('💡 Please create a .env file in the backend directory with:');
+      console.error('   MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/database?retryWrites=true&w=majority');
+      process.exit(1);
+    }
+
+    console.log('🔗 Connecting to MongoDB...');
+    console.log(`📍 URI: ${process.env.MONGODB_URI.replace(/:[^@]+@/, ':****@')}`);
+    
     // Remove deprecated options - they're not needed in newer versions
     const conn = await mongoose.connect(process.env.MONGODB_URI);
 
