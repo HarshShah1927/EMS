@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { registerUser } from '../lib/auth';
-import { Eye, EyeOff, Lock, Mail, Building, User, Phone, Briefcase, IdCard, CheckCircle } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, Building, User, Phone, Briefcase, CreditCard, CheckCircle } from 'lucide-react';
 
 const Login: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
@@ -360,7 +360,7 @@ const Login: React.FC = () => {
                 </label>
                 <div className="mt-1 relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <IdCard className="h-5 w-5 text-gray-400" />
+                                          <CreditCard className="h-5 w-5 text-gray-400" />
                   </div>
                   <input
                     id="register-employeeId"
