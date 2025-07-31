@@ -7,6 +7,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Employees from './pages/Employees';
 import Attendance from './pages/Attendance';
+import EmployeeAttendance from './pages/EmployeeAttendance';
 import Salary from './pages/Salary';
 import Invoices from './pages/Invoices';
 import Inventory from './pages/Inventory';
@@ -27,6 +28,7 @@ function App() {
                 <Route index element={<Dashboard />} />
                 <Route path="employees" element={<Employees />} />
                 <Route path="attendance" element={<Attendance />} />
+                <Route path="my-attendance" element={<EmployeeAttendance />} />
                 <Route path="salary" element={<Salary />} />
                 <Route path="invoices" element={<Invoices />} />
                 <Route path="inventory" element={<Inventory />} />

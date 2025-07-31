@@ -23,23 +23,48 @@ import {
 } from 'lucide-react';
 
 const Layout: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, hasRole } = useAuth();
   const { notifications, markNotificationAsRead, clearAllNotifications } = useData();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notificationOpen, setNotificationOpen] = useState(false);
 
-  const navigation = [
-    { name: 'Dashboard', href: '/', icon: Home },
-    { name: 'Employees', href: '/employees', icon: Users },
-    { name: 'Attendance', href: '/attendance', icon: Clock },
-    { name: 'Salary', href: '/salary', icon: DollarSign },
-    { name: 'Invoices', href: '/invoices', icon: FileText },
-    { name: 'Inventory', href: '/inventory', icon: Package },
-    { name: 'Dispatch', href: '/dispatch', icon: Truck },
-    { name: 'Reports', href: '/reports', icon: BarChart3 },
-    { name: 'Admin Profile', href: '/admin', icon: Shield },
-  ];
+  // Role-based navigation
+  const getNavigation = () => {
+    const baseNavigation = [
+      { name: 'Dashboard', href: '/', icon: Home, roles: ['admin', 'hr', 'manager', 'employee'] },
+    ];
+
+    if (hasRole(['admin', 'hr', 'manager'])) {
+      baseNavigation.push(
+        { name: 'Employees', href: '/employees', icon: Users, roles: ['admin', 'hr', 'manager'] },
+        { name: 'Attendance', href: '/attendance', icon: Clock, roles: ['admin', 'hr', 'manager'] },
+        { name: 'Salary', href: '/salary', icon: DollarSign, roles: ['admin', 'hr'] },
+        { name: 'Invoices', href: '/invoices', icon: FileText, roles: ['admin', 'hr'] },
+        { name: 'Inventory', href: '/inventory', icon: Package, roles: ['admin', 'hr', 'manager'] },
+        { name: 'Dispatch', href: '/dispatch', icon: Truck, roles: ['admin', 'hr', 'manager'] },
+        { name: 'Reports', href: '/reports', icon: BarChart3, roles: ['admin', 'hr', 'manager'] }
+      );
+    }
+
+    if (hasRole('employee')) {
+      baseNavigation.push(
+        { name: 'My Attendance', href: '/my-attendance', icon: Clock, roles: ['employee'] }
+      );
+    }
+
+    if (hasRole(['admin', 'hr'])) {
+      baseNavigation.push(
+        { name: 'Admin Profile', href: '/admin', icon: Shield, roles: ['admin', 'hr'] }
+      );
+    }
+
+    return baseNavigation.filter(item => 
+      item.roles.some(role => hasRole(role))
+    );
+  };
+
+  const navigation = getNavigation();
 
   const isActive = (path: string) => {
     return location.pathname === path;

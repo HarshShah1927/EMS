@@ -14,6 +14,7 @@ const connectDB = require('./config/database');
 // Import routes
 const authRoutes = require('./routes/auth');
 const advanceSalaryRoutes = require('./routes/advanceSalary');
+const attendanceRoutes = require('./routes/attendance');
 
 // Initialize Express app
 const app = express();
@@ -54,6 +55,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/advance-salary', advanceSalaryRoutes);
+app.use('/api/attendance', attendanceRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
