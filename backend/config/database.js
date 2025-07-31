@@ -2,8 +2,24 @@ const mongoose = require('mongoose');
 
 const connectDB = async () => {
   try {
-    // Remove deprecated options - they're not needed in newer versions
-    const conn = await mongoose.connect(process.env.MONGODB_URI);
+    // Check if MONGODB_URI is defined
+    const mongoURI = process.env.MONGODB_URI;
+    
+    if (!mongoURI) {
+      console.error('❌ MONGODB_URI is not defined in environment variables');
+      console.error('💡 Please check your .env file in the backend directory');
+      console.error('💡 Expected format: MONGODB_URI=mongodb://localhost:27017/database_name');
+      process.exit(1);
+    }
+
+    console.log('🔄 Connecting to MongoDB...');
+    console.log(`📍 URI: ${mongoURI.replace(/\/\/([^:]+):([^@]+)@/, '//***:***@')}`); // Hide credentials in logs
+    
+    // Connect to MongoDB with proper options
+    const conn = await mongoose.connect(mongoURI, {
+      serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
+      socketTimeoutMS: 45000, // Close sockets after 45s of inactivity
+    });
 
     console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
     console.log(`📊 Database: ${conn.connection.name}`);
@@ -25,6 +41,16 @@ const connectDB = async () => {
     } else if (error.message.includes('IP')) {
       console.error('🔧 Network Access Error - Check IP whitelist');
       console.error('💡 Add your IP to MongoDB Atlas Network Access');
+    } else if (error.message.includes('ECONNREFUSED')) {
+      console.error('🔧 Connection Refused - MongoDB server is not running');
+      console.error('💡 Start MongoDB service:');
+      console.error('   - macOS: brew services start mongodb-community');
+      console.error('   - Ubuntu: sudo systemctl start mongod');
+      console.error('   - Windows: net start MongoDB');
+    } else if (error.message.includes('uri parameter')) {
+      console.error('🔧 Invalid MongoDB URI format');
+      console.error('💡 Check your MONGODB_URI in .env file');
+      console.error('💡 Expected format: mongodb://localhost:27017/database_name');
     }
     
     process.exit(1);
